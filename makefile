@@ -27,14 +27,21 @@ FILES	= *.cxx *.hxx LICENSE README.md makefile *.md .gitignore #.gitattributes
 OBJECTS	= $(SOURCES:.cxx=.o)
 OUTPUT	= $(PROGRAM).out
 LANG	= LANG_$(shell (echo $$LANG | cut -f 1 -d '_'))
-COMMIT	!= git log -1 HEAD --format=%h 2> /dev/null
-BUILD	!= printf "%04d" $(shell git rev-list --count HEAD 2> /dev/null)
-UNAME	!= uname
+COMMIT	= $(shell git log -1 HEAD --format=%h 2> /dev/null)
+BUILD	= $(shell printf "%04d" $(shell git rev-list --count HEAD 2> /dev/null))
+UNAME	= $(shell uname)
 CC	= g++
 
 LIBS	= 
 LFLAGS	= -static
 CFLAGS	= -ggdb -fno-builtin -I .
+OPTFLAG	= -Ofast
+
+# macOS: no static crt0.o and clang deprecates -Ofast in favor of -O3
+ifeq ($(UNAME),Darwin)
+LFLAGS	=
+OPTFLAG	= -O3
+endif
 
 ifndef VERBOSE
 VERBOSE	= 0
@@ -48,7 +55,7 @@ ifneq ($(BUILD),)
 CFLAGS	+= -DBUILD='".$(BUILD)"'
 endif
 
-all: CFLAGS	+= -flto -Ofast -D NDEBUG
+all: CFLAGS	+= -flto $(OPTFLAG) -D NDEBUG
 all: $(PROGRAM) $(OBJECTS)
 
 $(PROGRAM): $(OBJECTS)
