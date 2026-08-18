@@ -1835,7 +1835,12 @@ static void mi_format_debug_value( const MIDebugValue * debugValue, char * outpu
             snprintf( output, outputSize, "[%d]", debugValue->dimensionCount ? debugValue->dimensions[ 0 ] : 0 );
         return;
     }
-    if ( debugValue->type & 128 ) { snprintf( output, outputSize, "{%s}", mi_type_name( debugValue->type, false, NULL, 0 ) ); return; }
+    if ( debugValue->type & 128 )
+    {
+        snprintf( output, outputSize, "{%.*s}", (int) ( outputSize > 3 ? outputSize - 3 : 1 ),
+                  mi_type_name( debugValue->type, false, NULL, 0 ) );
+        return;
+    }
     if ( !debugValue->immediate && debugValue->size > 1 )
         value |= (unsigned long) memory[ (uint16_t) ( address + 1 ) ] << 8;
     if ( !debugValue->immediate && debugValue->size > 2 )
@@ -1936,14 +1941,16 @@ static bool mi_debug_value_child_expression( const MIDebugValue * parent, const 
     if ( parent->isArray && parent->dimensionCount > 0 )
     {
         if ( childIndex < 0 || childIndex >= parent->dimensions[ 0 ] ) return false;
-        snprintf( expression, expressionSize, "%s[%d]", parentExpression, childIndex );
+        snprintf( expression, expressionSize, "%.*s[%d]",
+                  (int) ( expressionSize > 16 ? expressionSize - 16 : 1 ), parentExpression, childIndex );
         snprintf( displayName, displayNameSize, "[%d]", childIndex );
         return true;
     }
     if ( !parent->isFunctionPointer && ( parent->type & ( 16 | 64 ) ) )
     {
         if ( childIndex != 0 ) return false;
-        snprintf( expression, expressionSize, "*%s", parentExpression );
+        snprintf( expression, expressionSize, "*%.*s",
+                  (int) ( expressionSize > 2 ? expressionSize - 2 : 1 ), parentExpression );
         strcpy( displayName, "*" );
         return true;
     }
@@ -1955,7 +1962,9 @@ static bool mi_debug_value_child_expression( const MIDebugValue * parent, const 
             if ( g_miDebugFields[ index ].structId == ( parent->type >> 8 ) )
             {
                 if ( found++ != childIndex ) continue;
-                snprintf( expression, expressionSize, "%s.%s", parentExpression, g_miDebugFields[ index ].name );
+                snprintf( expression, expressionSize, "%.*s.%s",
+                          (int) ( expressionSize > 66 ? expressionSize - 66 : 1 ),
+                          parentExpression, g_miDebugFields[ index ].name );
                 strncpy( displayName, g_miDebugFields[ index ].name, displayNameSize - 1 );
                 displayName[ displayNameSize - 1 ] = 0;
                 return true;
@@ -6729,7 +6738,7 @@ int main( int argc, char * argv[] )
 #ifndef WATCOMDOS
         if ( g_miMode && g_miArguments[ 0 ] )
         {
-            snprintf( pCommandTail, 128, " %s", g_miArguments );
+            snprintf( pCommandTail, 128, " %.126s", g_miArguments );
             strupr( pCommandTail );
         }
 #endif
